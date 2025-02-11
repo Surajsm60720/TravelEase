@@ -12,7 +12,7 @@ import {
 } from "../ui/card";
 import { Label } from "../ui/label";
 import { Icons } from "../icons";
-import { Separator } from "../ui/separator";
+import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface AuthFormProps {
@@ -22,6 +22,9 @@ interface AuthFormProps {
 export function AuthForm({ type }: AuthFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const navigate = useNavigate();
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -35,23 +38,31 @@ export function AuthForm({ type }: AuthFormProps) {
 
     try {
       if (type === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              first_name: firstName,
+              last_name: lastName,
+            },
+          },
         });
         if (error) throw error;
-        // Show success message and prompt to verify email
+        console.log("Signup successful:", data);
         navigate("/auth/verify-email");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
+        console.log("Signin successful:", data);
         navigate("/trips");
       }
-    } catch (error) {
-      setError(error.message);
+    } catch (error: any) {
+      console.error("Auth error:", error);
+      setError(error.message || "An error occurred during authentication");
     } finally {
       setIsLoading(false);
     }
@@ -67,8 +78,9 @@ export function AuthForm({ type }: AuthFormProps) {
         },
       });
       if (error) throw error;
-    } catch (error) {
-      setError(error.message);
+    } catch (error: any) {
+      console.error("Google auth error:", error);
+      setError(error.message || "An error occurred with Google sign in");
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +95,7 @@ export function AuthForm({ type }: AuthFormProps) {
         <CardDescription>
           {type === "signin"
             ? "Enter your email and password to sign in"
-            : "Enter your email and password to create your account"}
+            : "Enter your details to create your account"}
         </CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
@@ -113,6 +125,36 @@ export function AuthForm({ type }: AuthFormProps) {
               </span>
             </div>
           </div>
+
+          {type === "signup" && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  name="firstName"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="John"
+                  disabled={isLoading}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  name="lastName"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Doe"
+                  disabled={isLoading}
+                  required
+                />
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -127,19 +169,37 @@ export function AuthForm({ type }: AuthFormProps) {
               required
             />
           </div>
+
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete={
-                type === "signin" ? "current-password" : "new-password"
-              }
-              disabled={isLoading}
-              required
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete={
+                  type === "signin" ? "current-password" : "new-password"
+                }
+                disabled={isLoading}
+                required
+              />
+              <button
+                type="button"
+                className="absolute right-0 top-0 h-full px-3 flex items-center justify-center hover:text-accent-foreground"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+                <span className="sr-only">
+                  {showPassword ? "Hide password" : "Show password"}
+                </span>
+              </button>
+            </div>
           </div>
+
           {error && <div className="text-sm text-destructive">{error}</div>}
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
