@@ -1,9 +1,16 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./theme-toggle";
+import { useAuth } from "@/contexts/auth-context";
+import { Button } from "./ui/button";
+import { UserCircle } from "lucide-react";
 
 const Navbar = () => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
+
+  const isAuthPage = location.pathname.startsWith("/auth/");
+  if (isAuthPage) return null;
 
   return (
     <nav className="bg-background border-b p-4">
@@ -14,25 +21,57 @@ const Navbar = () => {
             className={cn(
               "px-3 py-2 rounded-md text-sm font-medium",
               location.pathname === "/"
-                ? "bg-gray-900 text-white"
-                : "text-gray-300 hover:bg-gray-700 hover:text-white",
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
-            Discover Places
+            Home
           </Link>
-          <Link
-            to="/directions"
-            className={cn(
-              "px-3 py-2 rounded-md text-sm font-medium",
-              location.pathname === "/directions"
-                ? "bg-gray-900 text-white"
-                : "text-gray-300 hover:bg-gray-700 hover:text-white",
-            )}
-          >
-            Get Directions
-          </Link>
+          {user && (
+            <>
+              <Link
+                to="/trips"
+                className={cn(
+                  "px-3 py-2 rounded-md text-sm font-medium",
+                  location.pathname === "/trips"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                Trips
+              </Link>
+              <Link
+                to="/directions"
+                className={cn(
+                  "px-3 py-2 rounded-md text-sm font-medium",
+                  location.pathname === "/directions"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                Directions
+              </Link>
+            </>
+          )}
         </div>
-        <ThemeToggle />
+        <div className="flex items-center space-x-4">
+          <ThemeToggle />
+          {user ? (
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <UserCircle className="h-6 w-6" />
+                <span className="text-sm font-medium">{user.email}</span>
+              </div>
+              <Button variant="ghost" onClick={() => signOut()}>
+                Sign out
+              </Button>
+            </div>
+          ) : (
+            <Link to="/auth/signin">
+              <Button variant="default">Sign in</Button>
+            </Link>
+          )}
+        </div>
       </div>
     </nav>
   );

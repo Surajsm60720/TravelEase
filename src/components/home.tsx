@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Search, MapPin, Loader2 } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { useLoadScript } from "@react-google-maps/api";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/auth-context";
 
 interface Place {
   id: string;
@@ -21,6 +23,7 @@ const Home = () => {
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { user } = useAuth();
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
@@ -111,26 +114,51 @@ const Home = () => {
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 text-center">
             Discover Tourist Attractions Near You
           </h1>
-          <form onSubmit={handleSearch} className="w-full max-w-xl relative">
-            <Input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Enter a location (e.g., 'Paris, France')..."
-              className="w-full h-12 pl-12 pr-4 rounded-lg text-lg"
-            />
-            <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <Button
-              type="submit"
-              className="absolute right-2 top-1/2 transform -translate-y-1/2"
-              disabled={loading}
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Search"
-              )}
-            </Button>
-          </form>
+          <div className="w-full max-w-xl space-y-6">
+            <form onSubmit={handleSearch} className="relative">
+              <Input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Enter a location (e.g., 'Paris, France')..."
+                className="w-full h-12 pl-12 pr-4 rounded-lg text-lg"
+              />
+              <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <Button
+                type="submit"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Search"
+                )}
+              </Button>
+            </form>
+
+            {!user && (
+              <div className="flex gap-4 justify-center">
+                <Link to="/auth/signin">
+                  <Button
+                    size="lg"
+                    variant="default"
+                    className="bg-primary/90 hover:bg-primary"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/auth/signup">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="bg-background/90 hover:bg-background"
+                  >
+                    Sign Up
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -140,7 +168,7 @@ const Home = () => {
           <div className="text-center text-red-500 mb-8">{error}</div>
         ) : (
           places.length > 0 && (
-            <h2 className="text-3xl font-bold text-white mb-8">
+            <h2 className="text-3xl font-bold mb-8">
               Tourist Attractions in {location}
             </h2>
           )
@@ -159,7 +187,7 @@ const Home = () => {
                 />
                 {place.openNow !== undefined && (
                   <div
-                    className={`absolute top-4 right-4 px-2 py-1 rounded-full text-sm font-medium ${place.openNow ? "bg-green-500" : "bg-red-500"}`}
+                    className={`absolute top-4 right-4 px-2 py-1 rounded-full text-sm font-medium ${place.openNow ? "bg-green-500" : "bg-red-500"} text-white`}
                   >
                     {place.openNow ? "Open Now" : "Closed"}
                   </div>
@@ -167,17 +195,17 @@ const Home = () => {
               </div>
               <CardContent className="p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-semibold text-white">
-                    {place.name}
-                  </h3>
+                  <h3 className="text-xl font-semibold">{place.name}</h3>
                   {place.rating > 0 && (
                     <div className="flex items-center">
                       <span className="text-yellow-500">★</span>
-                      <span className="ml-1 text-white">{place.rating}</span>
+                      <span className="ml-1">{place.rating}</span>
                     </div>
                   )}
                 </div>
-                <p className="text-gray-400 text-sm mb-2">{place.address}</p>
+                <p className="text-muted-foreground text-sm mb-2">
+                  {place.address}
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {place.types
                     .filter(
@@ -192,7 +220,7 @@ const Home = () => {
                     .map((type) => (
                       <span
                         key={type}
-                        className="text-xs px-2 py-1 bg-gray-700 text-gray-300 rounded-full"
+                        className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-full"
                       >
                         {type.replace(/_/g, " ")}
                       </span>
