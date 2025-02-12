@@ -27,6 +27,17 @@ const Navbar = () => {
           >
             Home
           </Link>
+          <Link
+            to="/search"
+            className={cn(
+              "px-3 py-2 rounded-md text-sm font-medium",
+              location.pathname === "/search"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            Search
+          </Link>
           {user && (
             <>
               <Link

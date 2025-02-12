@@ -4,6 +4,7 @@ import Home from "./components/home";
 import DirectionsPage from "./components/directions";
 import TripsPage from "./components/trips/TripsPage";
 import Navbar from "./components/navbar";
+import SearchPage from "./components/search";
 import { ThemeProvider } from "./components/theme-provider";
 import { AuthProvider, useAuth } from "./contexts/auth-context";
 import SignInPage from "./pages/auth/signin";
@@ -38,6 +39,7 @@ function App() {
 
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
+              <Route path="/search" element={<SearchPage />} />
 
               {/* Protected Routes */}
               <Route
