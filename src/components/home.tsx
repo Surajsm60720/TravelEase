@@ -260,21 +260,6 @@ const Home = () => {
                 around the world. Discover new destinations and create
                 unforgettable memories.
               </p>
-              <div className="flex space-x-4">
-                {["twitter", "instagram", "github"].map((social) => (
-                  <a
-                    key={social}
-                    href={`#${social}`}
-                    className="w-10 h-10 rounded-full bg-primary/5 hover:bg-primary/10 flex items-center justify-center transition-colors"
-                  >
-                    <img
-                      src={`https://api.iconify.design/simple-icons:${social}.svg?color=currentColor`}
-                      alt={social}
-                      className="w-5 h-5 text-primary"
-                    />
-                  </a>
-                ))}
-              </div>
             </div>
             <div className="grid grid-cols-2 gap-8 md:col-span-2">
               <div>
