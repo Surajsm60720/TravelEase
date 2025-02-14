@@ -100,61 +100,6 @@ export function AuthForm({ type }: AuthFormProps) {
       </CardHeader>
       <form onSubmit={onSubmit}>
         <CardContent className="grid gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isLoading}
-            onClick={signInWithGoogle}
-            className="w-full"
-          >
-            {isLoading ? (
-              <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Icons.google className="mr-2 h-4 w-4" />
-            )}
-            Continue with Google
-          </Button>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
-            </div>
-          </div>
-
-          {type === "signup" && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  name="firstName"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="John"
-                  disabled={isLoading}
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  name="lastName"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Doe"
-                  disabled={isLoading}
-                  required
-                />
-              </div>
-            </div>
-          )}
-
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
