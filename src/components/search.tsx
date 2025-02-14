@@ -1,10 +1,18 @@
 import React, { useState } from "react";
-import { MapPin, Loader2 } from "lucide-react";
+import { MapPin, Loader2, Ruler, Navigation } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { useLoadScript } from "@react-google-maps/api";
 import { motion } from "framer-motion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 
 interface Place {
   id: string;
@@ -15,13 +23,19 @@ interface Place {
   address: string;
   types: string[];
   openNow?: boolean;
+  location?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export default function SearchPage() {
+  const navigate = useNavigate();
   const [location, setLocation] = useState("");
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [searchRadius, setSearchRadius] = useState("5000"); // Default 5km in meters
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "",
@@ -51,7 +65,7 @@ export default function SearchPage() {
 
       const request = {
         location: geocodeResult as google.maps.LatLng,
-        radius: 100000,
+        radius: parseInt(searchRadius),
         type: "tourist_attraction",
       };
 
@@ -60,6 +74,7 @@ export default function SearchPage() {
           const placesData: Place[] = results.map((place) => ({
             id: place.place_id || Math.random().toString(),
             name: place.name || "",
+            location: place.geometry?.location?.toJSON(),
             description: place.vicinity || "",
             rating: place.rating || 0,
             imageUrl:
@@ -107,27 +122,50 @@ export default function SearchPage() {
           </p>
         </div>
 
-        <div className="max-w-2xl mx-auto mb-16">
-          <form onSubmit={handleSearch} className="relative">
-            <Input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Where do you want to go?"
-              className="w-full h-14 pl-12 pr-4 rounded-full text-lg"
-            />
-            <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
-            <Button
-              type="submit"
-              size="lg"
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full"
-              disabled={loading}
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Search"
-              )}
-            </Button>
+        <div className="max-w-2xl mx-auto mb-8">
+          <form onSubmit={handleSearch} className="space-y-4">
+            <div className="relative">
+              <Input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Where do you want to go?"
+                className="w-full h-14 pl-12 pr-4 rounded-full text-lg"
+              />
+              <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+              <Button
+                type="submit"
+                size="lg"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 rounded-full"
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Search"
+                )}
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-3 justify-center">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Ruler className="h-4 w-4" />
+                <span>Within:</span>
+              </div>
+              <Select value={searchRadius} onValueChange={setSearchRadius}>
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue placeholder="Radius" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 10 }, (_, i) =>
+                    ((i + 1) * 5000).toString(),
+                  ).map((radius) => (
+                    <SelectItem key={radius} value={radius}>
+                      {parseInt(radius) / 1000}km
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </form>
         </div>
 
@@ -150,8 +188,8 @@ export default function SearchPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1, duration: 0.8 }}
                 >
-                  <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 h-full">
-                    <div className="relative h-48">
+                  <Card className="group overflow-hidden h-full relative transition-all duration-500 hover:shadow-none bg-card before:absolute before:-inset-1.5 before:bg-gradient-to-r before:from-primary/0 before:via-primary/10 before:to-primary/0 dark:before:from-primary/0 dark:before:via-primary/20 dark:before:to-primary/0 before:rounded-xl before:opacity-0 hover:before:opacity-100 before:transition-all before:duration-500 before:-z-10">
+                    <div className="relative h-48 z-10">
                       <img
                         src={place.imageUrl}
                         alt={place.name}
@@ -165,9 +203,21 @@ export default function SearchPage() {
                         </div>
                       )}
                     </div>
-                    <CardContent className="p-6">
+                    <CardContent className="p-6 relative z-10">
                       <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-xl font-semibold">{place.name}</h3>
+                        <button
+                          onClick={() => {
+                            if (place.location) {
+                              navigate(
+                                `/directions?destination=${encodeURIComponent(place.name)}&lat=${place.location.lat}&lng=${place.location.lng}`,
+                              );
+                            }
+                          }}
+                          className="group/btn text-xl font-semibold text-left hover:text-primary flex items-center gap-2"
+                        >
+                          {place.name}
+                          <Navigation className="h-4 w-4 opacity-0 -translate-x-2 transition-all duration-300 group-hover/btn:opacity-100 group-hover/btn:translate-x-0" />
+                        </button>
                         {place.rating > 0 && (
                           <div className="flex items-center bg-yellow-100 px-2 py-1 rounded-full">
                             <span className="text-yellow-500">★</span>
@@ -194,7 +244,7 @@ export default function SearchPage() {
                           .map((type) => (
                             <span
                               key={type}
-                              className="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded-full font-medium"
+                              className="text-xs px-3 py-1 bg-muted text-muted-foreground rounded-full font-medium"
                             >
                               {type.replace(/_/g, " ")}
                             </span>
