@@ -207,11 +207,11 @@ export default function SearchPage() {
                       <div className="flex justify-between items-start mb-4">
                         <button
                           onClick={() => {
-                            if (place.location) {
-                              navigate(
-                                `/directions?destination=${encodeURIComponent(place.name)}&lat=${place.location.lat}&lng=${place.location.lng}`,
-                              );
-                            }
+                            sessionStorage.setItem(
+                              "selectedDestination",
+                              place.name,
+                            );
+                            navigate("/directions");
                           }}
                           className="group/btn text-xl font-semibold text-left hover:text-primary flex items-center gap-2"
                         >

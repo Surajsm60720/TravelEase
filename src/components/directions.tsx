@@ -5,7 +5,6 @@ import {
   DirectionsRenderer,
   Autocomplete,
   Marker,
-  InfoWindow,
 } from "@react-google-maps/api";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -85,6 +84,20 @@ const DirectionsPage = () => {
     libraries: ["places"],
   });
 
+  // Initialize destination from sessionStorage
+  React.useEffect(() => {
+    const storedDestination = sessionStorage.getItem("selectedDestination");
+    if (storedDestination && destinationRef.current) {
+      const input = destinationRef.current
+        .getContainer()
+        .querySelector("input");
+      if (input) {
+        input.value = storedDestination;
+      }
+      sessionStorage.removeItem("selectedDestination");
+    }
+  }, [isLoaded]);
+
   const getPlaceDetails = useCallback(
     async (placeId: string, service: google.maps.places.PlacesService) => {
       return new Promise<google.maps.places.PlaceResult>((resolve, reject) => {
@@ -122,10 +135,22 @@ const DirectionsPage = () => {
       const service = new google.maps.places.PlacesService(mapRef.current);
       const path = route.overview_path;
       const foundPlaces: Place[] = [];
+      const seenPlaceIds = new Set<string>();
 
-      for (let i = 0; i < path.length; i += Math.floor(path.length / 5)) {
-        const point = path[i];
+      // Take points at intervals along the route
+      const numPoints = 5;
+      const interval = Math.max(1, Math.floor(path.length / numPoints));
+      const searchPoints = [];
 
+      for (let i = 0; i < path.length; i += interval) {
+        searchPoints.push(path[i]);
+      }
+      // Always include the last point
+      if (!searchPoints.includes(path[path.length - 1])) {
+        searchPoints.push(path[path.length - 1]);
+      }
+
+      for (const point of searchPoints) {
         for (const type of selectedTypes) {
           const request = {
             location: point,
@@ -149,7 +174,17 @@ const DirectionsPage = () => {
               },
             );
 
-            for (const place of results) {
+            // Filter for high-rated places and remove duplicates
+            const highRatedPlaces = results
+              .filter((place) => {
+                if (!place.place_id || seenPlaceIds.has(place.place_id))
+                  return false;
+                seenPlaceIds.add(place.place_id);
+                return place.rating && place.rating >= 4.0;
+              })
+              .sort((a, b) => (b.rating || 0) - (a.rating || 0));
+
+            for (const place of highRatedPlaces) {
               if (place.geometry?.location && place.place_id) {
                 try {
                   const details = await getPlaceDetails(
@@ -184,7 +219,12 @@ const DirectionsPage = () => {
         }
       }
 
-      setPlaces(foundPlaces);
+      // Sort all places by rating and take top results
+      const sortedPlaces = foundPlaces
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        .slice(0, 15); // Limit total places to 15
+
+      setPlaces(sortedPlaces);
     },
     [selectedTypes, searchRadius, getPlaceDetails],
   );
@@ -362,18 +402,51 @@ const DirectionsPage = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-4">
-            {placeTypes.map(({ type, label, icon }) => (
-              <Badge
-                key={type}
-                variant={selectedTypes.includes(type) ? "secondary" : "outline"}
-                className={`cursor-pointer hover:bg-primary/20 transition-colors ${selectedTypes.includes(type) ? "bg-primary/30" : ""}`}
-                onClick={() => togglePlaceType(type)}
-              >
-                {icon}
-                <span className="ml-1">{label}</span>
-              </Badge>
-            ))}
+          <div className="space-y-4 mb-4">
+            <div className="flex flex-wrap gap-2">
+              {placeTypes.map(({ type, label, icon }) => (
+                <Badge
+                  key={type}
+                  variant={
+                    selectedTypes.includes(type) ? "secondary" : "outline"
+                  }
+                  className={`cursor-pointer hover:bg-primary/20 transition-colors ${selectedTypes.includes(type) ? "bg-primary/30" : ""}`}
+                  onClick={() => togglePlaceType(type)}
+                >
+                  {icon}
+                  <span className="ml-1">{label}</span>
+                </Badge>
+              ))}
+            </div>
+
+            {selectedTypes.length > 0 && (
+              <div className="flex flex-wrap gap-2 text-sm text-muted-foreground bg-muted/50 p-2 rounded-lg">
+                <span className="font-medium">Map Legend:</span>
+                {selectedTypes.map((type) => {
+                  const placeType = placeTypes.find((t) => t.type === type);
+                  return (
+                    <div key={type} className="flex items-center gap-1">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{
+                          backgroundColor:
+                            type === "restaurant"
+                              ? "#ff0000"
+                              : type === "hotel"
+                                ? "#0000ff"
+                                : type === "cafe"
+                                  ? "#ffff00"
+                                  : type === "tourist_attraction"
+                                    ? "#00ff00"
+                                    : "#800080",
+                        }}
+                      />
+                      <span>{placeType?.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {error && (
@@ -426,124 +499,92 @@ const DirectionsPage = () => {
                 icon={{
                   url: `https://maps.google.com/mapfiles/ms/icons/${getMarkerColor(place.type)}-dot.png`,
                 }}
-                onClick={() => setSelectedPlace(place)}
+                onClick={() => {
+                  setSelectedPlace(place);
+                  if (mapRef.current) {
+                    mapRef.current.panTo(place.location);
+                    mapRef.current.setZoom(15);
+                  }
+                }}
               />
             ))}
-            {selectedPlace && (
-              <InfoWindow
-                position={selectedPlace.location}
-                onCloseClick={() => setSelectedPlace(null)}
-              >
-                <div className="max-w-sm bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
-                  {selectedPlace.photos && selectedPlace.photos.length > 0 && (
-                    <img
-                      src={selectedPlace.photos[0].getUrl()}
-                      alt={selectedPlace.name}
-                      className="w-full h-32 object-cover"
-                    />
-                  )}
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold mb-2 dark:text-white">
-                      {selectedPlace.name}
-                    </h3>
-
-                    {selectedPlace.rating && (
-                      <div className="flex items-center mb-2">
-                        <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                        <span className="dark:text-gray-200">
-                          {selectedPlace.rating} / 5
-                        </span>
-                      </div>
-                    )}
-
-                    {selectedPlace.formatted_address && (
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                        <MapPin className="h-4 w-4 inline mr-1" />
-                        {selectedPlace.formatted_address}
-                      </p>
-                    )}
-
-                    {selectedPlace.formatted_phone_number && (
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                        <Phone className="h-4 w-4 inline mr-1" />
-                        {selectedPlace.formatted_phone_number}
-                      </p>
-                    )}
-
-                    {selectedPlace.opening_hours && (
-                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                        <Clock className="h-4 w-4 inline mr-1" />
-                        {selectedPlace.opening_hours.isOpen()
-                          ? "Open now"
-                          : "Closed"}
-                      </p>
-                    )}
-
-                    {selectedPlace.website && (
-                      <a
-                        href={selectedPlace.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center"
-                      >
-                        <Globe className="h-4 w-4 mr-1" />
-                        Visit Website
-                      </a>
-                    )}
-
-                    {selectedPlace.reviews &&
-                      selectedPlace.reviews.length > 0 && (
-                        <div className="mt-4">
-                          <h4 className="text-sm font-semibold mb-2 dark:text-gray-200">
-                            Latest Review
-                          </h4>
-                          <div className="text-sm text-gray-600 dark:text-gray-300">
-                            <div className="flex items-center mb-1">
-                              <Star className="h-3 w-3 text-yellow-400 mr-1" />
-                              <span>{selectedPlace.reviews[0].rating} / 5</span>
-                            </div>
-                            <p className="text-xs italic">
-                              "{selectedPlace.reviews[0].text}"
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                  </div>
-                </div>
-              </InfoWindow>
-            )}
           </GoogleMap>
         </Card>
 
-        {places.length > 0 && (
-          <Card className="p-4">
-            <h3 className="text-xl font-semibold mb-4">Places Found</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {places.map((place) => (
-                <div
-                  key={place.id}
-                  className="p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
-                  onClick={() => {
-                    setSelectedPlace(place);
-                    if (mapRef.current) {
-                      mapRef.current.panTo(place.location);
-                      mapRef.current.setZoom(15);
-                    }
-                  }}
-                >
-                  <div className="flex items-start justify-between">
-                    <h4 className="font-medium">{place.name}</h4>
-                    {place.rating && (
-                      <span className="text-yellow-400">{place.rating}★</span>
-                    )}
-                  </div>
-                  {place.vicinity && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {place.vicinity}
+        {selectedPlace && selectedTypes.length > 0 && (
+          <Card className="p-6 mt-6">
+            <div className="flex flex-col md:flex-row gap-6">
+              {selectedPlace.photos && selectedPlace.photos.length > 0 && (
+                <div className="w-full md:w-1/3">
+                  <img
+                    src={selectedPlace.photos[0].getUrl()}
+                    alt={selectedPlace.name}
+                    className="w-full h-48 object-cover rounded-lg"
+                  />
+                </div>
+              )}
+              <div className="flex-1">
+                <h3 className="text-2xl font-semibold mb-4">
+                  {selectedPlace.name}
+                </h3>
+                <div className="grid gap-4">
+                  {selectedPlace.rating && (
+                    <div className="flex items-center">
+                      <Star className="h-5 w-5 text-yellow-400 mr-2" />
+                      <span className="font-medium">
+                        {selectedPlace.rating} / 5
+                      </span>
+                    </div>
+                  )}
+                  {selectedPlace.formatted_address && (
+                    <p className="flex items-center text-muted-foreground">
+                      <MapPin className="h-5 w-5 mr-2" />
+                      {selectedPlace.formatted_address}
                     </p>
                   )}
+                  {selectedPlace.formatted_phone_number && (
+                    <p className="flex items-center text-muted-foreground">
+                      <Phone className="h-5 w-5 mr-2" />
+                      {selectedPlace.formatted_phone_number}
+                    </p>
+                  )}
+                  {selectedPlace.opening_hours && (
+                    <p className="flex items-center text-muted-foreground">
+                      <Clock className="h-5 w-5 mr-2" />
+                      {selectedPlace.opening_hours.isOpen()
+                        ? "Open now"
+                        : "Closed"}
+                    </p>
+                  )}
+                  {selectedPlace.website && (
+                    <a
+                      href={selectedPlace.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center text-primary hover:underline"
+                    >
+                      <Globe className="h-5 w-5 mr-2" />
+                      Visit Website
+                    </a>
+                  )}
                 </div>
-              ))}
+                {selectedPlace.reviews && selectedPlace.reviews.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="font-semibold mb-3">Latest Review</h4>
+                    <div className="bg-muted p-4 rounded-lg">
+                      <div className="flex items-center mb-2">
+                        <Star className="h-4 w-4 text-yellow-400 mr-1" />
+                        <span className="font-medium">
+                          {selectedPlace.reviews[0].rating} / 5
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground italic">
+                        "{selectedPlace.reviews[0].text}"
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </Card>
         )}
