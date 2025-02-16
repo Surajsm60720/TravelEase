@@ -84,15 +84,29 @@ const DirectionsPage = () => {
     libraries: ["places"],
   });
 
-  // Initialize destination from sessionStorage
+  // Initialize destination from sessionStorage and trigger route calculation
   React.useEffect(() => {
     const storedDestination = sessionStorage.getItem("selectedDestination");
-    if (storedDestination && destinationRef.current) {
+    if (storedDestination && destinationRef.current && isLoaded) {
       const input = destinationRef.current
         .getContainer()
         .querySelector("input");
       if (input) {
         input.value = storedDestination;
+        // Create a geocoder instance
+        const geocoder = new google.maps.Geocoder();
+        // Geocode the stored destination
+        geocoder.geocode({ address: storedDestination }, (results, status) => {
+          if (status === google.maps.GeocoderStatus.OK && results?.[0]) {
+            // Set the place details
+            destinationRef.current?.setPlace({
+              formatted_address: results[0].formatted_address,
+              geometry: results[0].geometry,
+              name: storedDestination,
+              place_id: results[0].place_id,
+            });
+          }
+        });
       }
       sessionStorage.removeItem("selectedDestination");
     }

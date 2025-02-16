@@ -23,8 +23,7 @@ export function AuthForm({ type }: AuthFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [showPassword, setShowPassword] = useState(false);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const navigate = useNavigate();
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -37,16 +36,19 @@ export function AuthForm({ type }: AuthFormProps) {
     const password = formData.get("password") as string;
 
     try {
+      if (showResetPassword) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        });
+        if (error) throw error;
+        navigate("/auth/verify-email");
+        return;
+      }
+
       if (type === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            data: {
-              first_name: firstName,
-              last_name: lastName,
-            },
-          },
         });
         if (error) throw error;
         console.log("Signup successful:", data);
@@ -115,44 +117,63 @@ export function AuthForm({ type }: AuthFormProps) {
             />
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
-            <div className="relative">
-              <Input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete={
-                  type === "signin" ? "current-password" : "new-password"
-                }
-                disabled={isLoading}
-                required
-              />
-              <button
-                type="button"
-                className="absolute right-0 top-0 h-full px-3 flex items-center justify-center hover:text-accent-foreground"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-                <span className="sr-only">
-                  {showPassword ? "Hide password" : "Show password"}
-                </span>
-              </button>
+          {!showResetPassword && (
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={
+                    type === "signin" ? "current-password" : "new-password"
+                  }
+                  disabled={isLoading}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-0 top-0 h-full px-3 flex items-center justify-center hover:text-accent-foreground"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                  <span className="sr-only">
+                    {showPassword ? "Hide password" : "Show password"}
+                  </span>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {error && <div className="text-sm text-destructive">{error}</div>}
+
+          {type === "signin" && !showResetPassword && (
+            <Button
+              variant="link"
+              className="px-0 font-normal"
+              onClick={(e) => {
+                e.preventDefault();
+                setShowResetPassword(true);
+              }}
+            >
+              Forgot password?
+            </Button>
+          )}
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button className="w-full" type="submit" disabled={isLoading}>
             {isLoading && (
               <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
             )}
-            {type === "signin" ? "Sign in" : "Create account"}
+            {showResetPassword
+              ? "Send reset instructions"
+              : type === "signin"
+                ? "Sign in"
+                : "Create account"}
           </Button>
           {type === "signin" ? (
             <p className="text-sm text-muted-foreground text-center">

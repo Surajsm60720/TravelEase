@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Loader2 } from "lucide-react";
+import { Plus, Pencil, Loader2, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Badge } from "../ui/badge";
 import AddTripModal from "./AddTripModal";
 import AddExpenseModal from "./AddExpenseModal";
 import EditExpenseModal from "./EditExpenseModal";
+import DeleteTripDialog from "./DeleteTripDialog";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/auth-context";
 
@@ -38,6 +39,7 @@ export default function TripsPage() {
   const [isEditExpenseModalOpen, setIsEditExpenseModalOpen] = useState(false);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [tripToDelete, setTripToDelete] = useState<Trip | null>(null);
   const [trips, setTrips] = useState<TripWithExpenses[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +55,6 @@ export default function TripsPage() {
     try {
       setLoading(true);
       setError(null);
-      console.log("Loading trips for user:", user?.id);
 
       const { data: tripsData, error: tripsError } = await supabase
         .from("trips")
@@ -66,8 +67,6 @@ export default function TripsPage() {
         setError("Failed to load trips");
         return;
       }
-
-      console.log("Trips data:", tripsData);
 
       const tripsWithExpenses = await Promise.all(
         (tripsData || []).map(async (trip) => {
@@ -82,7 +81,6 @@ export default function TripsPage() {
             return { ...trip, expenses: [] };
           }
 
-          console.log(`Expenses for trip ${trip.id}:`, expenses);
           return { ...trip, expenses: expenses || [] };
         }),
       );
@@ -117,6 +115,32 @@ export default function TripsPage() {
     } catch (error) {
       console.error("Error adding trip:", error);
       setError("Failed to add trip");
+    }
+  };
+
+  const handleDeleteTrip = async (tripId: string) => {
+    try {
+      // First delete all expenses associated with the trip
+      const { error: expensesError } = await supabase
+        .from("expenses")
+        .delete()
+        .eq("trip_id", tripId);
+
+      if (expensesError) throw expensesError;
+
+      // Then delete the trip itself
+      const { error: tripError } = await supabase
+        .from("trips")
+        .delete()
+        .eq("id", tripId);
+
+      if (tripError) throw tripError;
+
+      await loadTrips();
+      setTripToDelete(null);
+    } catch (error) {
+      console.error("Error deleting trip:", error);
+      setError("Failed to delete trip");
     }
   };
 
@@ -260,7 +284,17 @@ export default function TripsPage() {
           {trips.map((trip) => (
             <Card key={trip.id} className="relative">
               <CardHeader>
-                <h3 className="text-xl font-semibold">{trip.title}</h3>
+                <div className="flex justify-between items-start">
+                  <h3 className="text-xl font-semibold">{trip.title}</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={() => setTripToDelete(trip)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
                 <div className="text-sm text-muted-foreground">
                   <p>
                     <span className="font-medium text-foreground">From:</span>{" "}
@@ -369,6 +403,15 @@ export default function TripsPage() {
           onSubmit={handleEditExpense}
           onDelete={handleDeleteExpense}
           expense={selectedExpense}
+        />
+      )}
+
+      {tripToDelete && (
+        <DeleteTripDialog
+          open={!!tripToDelete}
+          onClose={() => setTripToDelete(null)}
+          onConfirm={() => handleDeleteTrip(tripToDelete.id)}
+          tripTitle={tripToDelete.title}
         />
       )}
     </div>

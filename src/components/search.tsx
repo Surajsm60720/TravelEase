@@ -104,6 +104,13 @@ export default function SearchPage() {
     }
   };
 
+  const handlePlaceClick = (place: Place) => {
+    // Store both name and address for better accuracy
+    const destination = place.address || place.name;
+    sessionStorage.setItem("selectedDestination", destination);
+    navigate("/directions");
+  };
+
   if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -206,13 +213,7 @@ export default function SearchPage() {
                     <CardContent className="p-6 relative z-10">
                       <div className="flex justify-between items-start mb-4">
                         <button
-                          onClick={() => {
-                            sessionStorage.setItem(
-                              "selectedDestination",
-                              place.name,
-                            );
-                            navigate("/directions");
-                          }}
+                          onClick={() => handlePlaceClick(place)}
                           className="group/btn text-xl font-semibold text-left hover:text-primary flex items-center gap-2"
                         >
                           {place.name}
