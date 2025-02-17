@@ -23,15 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
-<<<<<<< HEAD
 # Environment variables
 .env
 .env.local
 .env.development
 .env.production
-=======
-.env*.local
->>>>>>> 644da9463725c078c4be341cfa0cecce0e4e65c5
 
 !node_modules/.vite
 
