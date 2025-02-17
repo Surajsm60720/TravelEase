@@ -385,10 +385,10 @@ const DirectionsPage = () => {
       : [];
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background p-3 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <Card className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-4">
             <div className="relative">
               <Autocomplete
                 onLoad={(auto) => (sourceRef.current = auto)}

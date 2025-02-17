@@ -252,8 +252,8 @@ export default function TripsPage() {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto py-4 md:py-8 px-4">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
         <h1 className="text-3xl font-bold">My Trips</h1>
         <Button onClick={() => setIsAddModalOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />

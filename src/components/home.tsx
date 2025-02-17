@@ -35,7 +35,7 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="relative min-h-[800px] bg-background overflow-hidden">
+      <div className="relative min-h-[600px] md:min-h-[800px] bg-background overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-cyan-500/10 to-indigo-500/10 dark:from-purple-500/20 dark:via-cyan-500/20 dark:to-indigo-500/20" />
@@ -43,7 +43,7 @@ const Home = () => {
         </div>
 
         {/* Content */}
-        <div className="relative pt-24 pb-32 px-4">
+        <div className="relative pt-16 md:pt-24 pb-16 md:pb-32 px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
