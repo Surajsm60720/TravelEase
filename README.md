@@ -2,7 +2,6 @@
 
 A modern travel planning application built with React, TypeScript, and Vite that helps users plan and organize their trips with interactive maps, expense tracking, and place discovery.
 
-![TravelEase](https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=80)
 
 ## Features
 
