@@ -67,21 +67,26 @@ const Navbar = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex justify-between items-center">
-          <div className="flex space-x-4">
-            {navLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={cn(
-                  "px-3 py-2 rounded-md text-sm font-medium",
-                  location.pathname === link.to
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
+          <div className="flex items-center space-x-6">
+            <Link to="/">
+              <Logo />
+            </Link>
+            <div className="flex space-x-4">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={cn(
+                    "px-3 py-2 rounded-md text-sm font-medium",
+                    location.pathname === link.to
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
           </div>
 
           <div className="flex items-center space-x-4">
