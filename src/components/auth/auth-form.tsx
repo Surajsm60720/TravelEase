@@ -49,6 +49,9 @@ export function AuthForm({ type }: AuthFormProps) {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
         });
         if (error) throw error;
         console.log("Signup successful:", data);
@@ -153,12 +156,10 @@ export function AuthForm({ type }: AuthFormProps) {
 
           {type === "signin" && !showResetPassword && (
             <Button
+              type="button"
               variant="link"
               className="px-0 font-normal"
-              onClick={(e) => {
-                e.preventDefault();
-                setShowResetPassword(true);
-              }}
+              onClick={() => setShowResetPassword(true)}
             >
               Forgot password?
             </Button>

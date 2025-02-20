@@ -11,6 +11,7 @@ import SignInPage from "./pages/auth/signin";
 import SignUpPage from "./pages/auth/signup";
 import VerifyEmailPage from "./pages/auth/verify-email";
 import AuthCallback from "./pages/auth/callback";
+import VerificationSuccessPage from "./pages/auth/verification-success";
 import routes from "tempo-routes";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -36,6 +37,10 @@ function App() {
               <Route path="/auth/signup" element={<SignUpPage />} />
               <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route
+                path="/auth/verification-success"
+                element={<VerificationSuccessPage />}
+              />
 
               {/* Public Routes */}
               <Route path="/" element={<Home />} />

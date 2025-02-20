@@ -7,7 +7,12 @@ export default function AuthCallback() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+      const params = new URLSearchParams(window.location.search);
+      const isVerification = params.get("type") === "email_verification";
+
+      if (isVerification) {
+        navigate("/auth/verification-success");
+      } else if (session) {
         navigate("/trips");
       } else {
         navigate("/auth/signin");
